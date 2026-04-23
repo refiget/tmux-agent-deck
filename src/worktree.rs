@@ -14,7 +14,7 @@ pub use config::{
 };
 pub use flow::{SpawnRequest, remove, spawn};
 pub use markers::{
-    SPAWN_MARKERS_TEMPLATE, SPAWNED_BRANCH_OPTION, SPAWNED_FROM_OPTION, SPAWNED_OPTION,
-    SPAWNED_WORKTREE_OPTION, SpawnMarkers, read_spawn_markers,
+    SPAWNED_BRANCH_OPTION, SPAWNED_FROM_OPTION, SPAWNED_OPTION, SPAWNED_WORKTREE_OPTION,
+    SpawnMarkers, read_spawn_markers, spawn_markers_template,
 };
 pub use slug::{pick_unique_slug, slugify, worktree_path_for};

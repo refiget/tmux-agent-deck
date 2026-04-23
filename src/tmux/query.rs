@@ -4,8 +4,8 @@ use crate::process::{ProcessSnapshot, command_basename};
 
 use super::commands::run_tmux;
 use super::options::{
-    PANE_AGENT, PANE_ATTENTION, PANE_BG_CMD, PANE_CWD, PANE_PENDING_SESSION_END,
-    PANE_PENDING_WORKTREE_REMOVE, PANE_PERMISSION_MODE, PANE_PROMPT, PANE_PROMPT_SOURCE,
+    PANE_AGENT, PANE_ATTENTION, PANE_BG_CMD, PANE_CWD, PANE_NAME, PANE_PENDING_SESSION_END,
+    PANE_PENDING_WORKTREE_REMOVE, PANE_PERMISSION_MODE, PANE_PROMPT, PANE_PROMPT_SOURCE, PANE_ROLE,
     PANE_SESSION_ID, PANE_STARTED_AT, PANE_STATUS, PANE_SUBAGENTS, PANE_WAIT_REASON,
     PANE_WORKTREE_BRANCH, PANE_WORKTREE_NAME, unset_pane_option,
 };
@@ -13,9 +13,10 @@ use super::types::{
     AgentType, CODEX_AGENT, PaneInfo, PaneStatus, PermissionMode, SessionInfo, WindowInfo,
     WorktreeMetadata,
 };
+use crate::worktree::SPAWNED_OPTION;
 
 // Field indices in `tmux list-panes -F` output. Keep in lock-step with
-// the `PANE_FORMAT` format string. When adding a new field, update both
+// the `pane_format()` field list. When adding a new field, update both
 // this module and the format string together.
 mod session_line_field {
     pub const SESSION_NAME: usize = 0;
@@ -25,7 +26,7 @@ mod session_line_field {
     pub const AUTOMATIC_RENAME: usize = 5;
     /// Index where the per-pane field suffix consumed by `parse_pane_line` begins.
     pub const PANE_LINE_OFFSET: usize = 6;
-    /// Minimum number of fields a valid `PANE_FORMAT` line must contain.
+    /// Minimum number of fields a valid `pane_format()` line must contain.
     pub const MIN_FIELDS: usize = 28;
 }
 
@@ -60,9 +61,46 @@ pub(super) mod pane_line_field {
     pub const MIN_FIELDS: usize = 22;
 }
 
-/// tmux `list-panes -F` format used by [`query_sessions`]. Every field is
-/// quoted with `#{q:...}` so embedded pipes in user content survive the split.
-const PANE_FORMAT: &str = "#{q:session_name}|#{q:window_id}|#{q:window_index}|#{q:window_name}|#{q:window_active}|#{q:automatic-rename}|#{q:pane_active}|#{q:@pane_status}|#{q:@pane_attention}|#{q:@pane_agent}|#{q:@pane_name}|#{q:pane_current_path}|#{q:pane_current_command}|#{q:@pane_role}|#{q:pane_id}|#{q:@pane_prompt}|#{q:@pane_prompt_source}|#{q:@pane_started_at}|#{q:@pane_wait_reason}|#{q:pane_pid}|#{q:@pane_subagents}|#{q:@pane_cwd}|#{q:@pane_permission_mode}|#{q:@pane_worktree_name}|#{q:@pane_worktree_branch}|#{q:@pane_session_id}|#{q:@agent-sidebar-spawned}|#{q:@pane_bg_cmd}";
+/// Build the tmux `list-panes -F` format used by [`query_sessions`].
+/// Every field is quoted with `#{q:...}` so embedded pipes in user content
+/// survive the split.
+fn pane_format() -> String {
+    [
+        q("session_name"),
+        q("window_id"),
+        q("window_index"),
+        q("window_name"),
+        q("window_active"),
+        q("automatic-rename"),
+        q("pane_active"),
+        q(PANE_STATUS),
+        q(PANE_ATTENTION),
+        q(PANE_AGENT),
+        q(PANE_NAME),
+        q("pane_current_path"),
+        q("pane_current_command"),
+        q(PANE_ROLE),
+        q("pane_id"),
+        q(PANE_PROMPT),
+        q(PANE_PROMPT_SOURCE),
+        q(PANE_STARTED_AT),
+        q(PANE_WAIT_REASON),
+        q("pane_pid"),
+        q(PANE_SUBAGENTS),
+        q(PANE_CWD),
+        q(PANE_PERMISSION_MODE),
+        q(PANE_WORKTREE_NAME),
+        q(PANE_WORKTREE_BRANCH),
+        q(PANE_SESSION_ID),
+        q(SPAWNED_OPTION),
+        q(PANE_BG_CMD),
+    ]
+    .join("|")
+}
+
+fn q(field: &str) -> String {
+    format!("#{{q:{field}}}")
+}
 
 type SessionMap = indexmap::IndexMap<String, indexmap::IndexMap<String, WindowInfo>>;
 
@@ -79,7 +117,8 @@ pub fn query_sessions() -> Vec<SessionInfo> {
 
 pub(crate) fn query_sessions_with_process_snapshot() -> (Vec<SessionInfo>, Option<ProcessSnapshot>)
 {
-    let all_panes_output = match run_tmux(&["list-panes", "-a", "-F", PANE_FORMAT]) {
+    let pane_format = pane_format();
+    let all_panes_output = match run_tmux(&["list-panes", "-a", "-F", &pane_format]) {
         Some(s) => s,
         None => return (vec![], None),
     };

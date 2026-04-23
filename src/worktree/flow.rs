@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use super::config::{DEFAULT_BRANCH_PREFIX, RemoveMode};
 use super::env::{RealEnv, SpawnEnv};
 use super::markers::{
-    SPAWN_MARKERS_TEMPLATE, SPAWNED_BRANCH_OPTION, SPAWNED_FROM_OPTION, SPAWNED_OPTION,
-    SPAWNED_WORKTREE_OPTION, SpawnMarkers,
+    SPAWNED_BRANCH_OPTION, SPAWNED_FROM_OPTION, SPAWNED_OPTION, SPAWNED_WORKTREE_OPTION,
+    SpawnMarkers, spawn_markers_template,
 };
 use super::slug::{MAX_COLLISION_ATTEMPTS, pick_unique_slug, slugify, worktree_path_for};
 
@@ -151,7 +151,7 @@ pub(crate) fn remove_with<E: SpawnEnv>(
     pane_id: &str,
     mode: RemoveMode,
 ) -> Result<(), String> {
-    let markers = SpawnMarkers::parse(&env.display_message(pane_id, SPAWN_MARKERS_TEMPLATE));
+    let markers = SpawnMarkers::parse(&env.display_message(pane_id, &spawn_markers_template()));
     if !markers.is_spawned() {
         return Err("pane was not created by sidebar spawn".into());
     }

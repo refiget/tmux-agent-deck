@@ -67,8 +67,13 @@ pub(super) fn collect(state: &AppState, width: u16) -> CollectedRows {
             .iter()
             .find_map(|(_, git)| git.repo_root.clone());
         let spans: Vec<Span<'static>> = if let Some(ref root) = repo_root {
-            let title_upper = title.to_uppercase();
-            let title_w = display_width(&title_upper);
+            let home = std::env::var("HOME").unwrap_or_default();
+            let display_title = if !home.is_empty() && root.starts_with(&home) {
+                format!("~{}", &root[home.len()..])
+            } else {
+                root.clone()
+            };
+            let title_w = display_width(&display_title);
             // "── " + title + " " + fill + " +"
             let reserved = 3 + title_w + 3;
             let fill_w = width.saturating_sub(reserved);
@@ -84,15 +89,14 @@ pub(super) fn collect(state: &AppState, width: u16) -> CollectedRows {
             };
             vec![
                 Span::styled("── ", dim),
-                Span::styled(title_upper, Style::default().fg(title_color)),
+                Span::styled(display_title, Style::default().fg(title_color)),
                 Span::styled(format!(" {}", fill), dim),
                 Span::styled(" ", dim),
                 Span::styled(SPAWN_BUTTON, Style::default().fg(button_color)),
             ]
         } else {
-            let title_upper = title.to_uppercase();
             vec![Span::styled(
-                title_upper,
+                title.to_string(),
                 Style::default().fg(title_color),
             )]
         };

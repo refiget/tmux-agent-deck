@@ -113,18 +113,14 @@ pub(super) fn handle_event(
                     }
                 },
                 KeyCode::Char('h') | KeyCode::Left => {
-                    if state.focus_state.focus == Focus::Filter {
                         state.global.status_filter = state.global.status_filter.prev();
                         state.global.save_filter();
                         state.rebuild_row_targets();
-                    }
                 }
                 KeyCode::Char('l') | KeyCode::Right => {
-                    if state.focus_state.focus == Focus::Filter {
                         state.global.status_filter = state.global.status_filter.next();
                         state.global.save_filter();
                         state.rebuild_row_targets();
-                    }
                 }
                 KeyCode::Char('r') => {
                     if state.focus_state.focus == Focus::Filter {

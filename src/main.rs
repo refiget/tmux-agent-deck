@@ -44,9 +44,9 @@ fn main() -> io::Result<()> {
         std::process::exit(code);
     }
 
-    let tmux_pane = std::env::var("TMUX_PANE").unwrap_or_default();
+    let tmux_pane = resolve_tmux_pane();
     if tmux_pane.is_empty() {
-        eprintln!("TMUX_PANE not set");
+        eprintln!("Could not resolve tmux pane. Run inside tmux.");
         std::process::exit(1);
     }
 
@@ -75,6 +75,21 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     app::run(&mut terminal, tmux_pane, &NEEDS_REFRESH)
+}
+
+fn resolve_tmux_pane() -> String {
+    std::env::var("TMUX_PANE")
+        .ok()
+        .filter(|pane| !pane.is_empty())
+        .unwrap_or_else(|| {
+            std::process::Command::new("tmux")
+                .args(["display-message", "-p", "#{pane_id}"])
+                .output()
+                .ok()
+                .filter(|output| output.status.success())
+                .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
+                .unwrap_or_default()
+        })
 }
 
 extern "C" fn sigusr1_handler(_: libc::c_int) {

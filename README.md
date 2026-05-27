@@ -1,7 +1,17 @@
-<h1 align="center">tmux-agent-sidebar</h1>
+<h1 align="center">agent-panel</h1>
 
 <p align="center">
   <img src="docs/screenshots/full-screen-preview.png" alt="tmux-agent-sidebar full-screen preview" width="800" />
+</p>
+
+---
+
+## 🔔 tmux window 状态提醒
+
+集成 tmux window bell 机制。当 Agent 需要确认或任务完成时，tmux 状态栏会显示提醒标识，聚焦到对应面板后自动消除。
+
+<p align="center">
+  <img src="docs/screenshots/bell-notification.png" alt="tmux window bell notification" width="600" />
 </p>
 
 ---
@@ -17,16 +27,6 @@
 - **状态监控** — 汇总显示所有会话中的 Agent 状态、提示词及任务进度。
 - **快速跳转** — 在面板中直接选中并跳转到目标 Agent 所在的窗口或面板。
 - **Git & Worktrees** — 在 TUI 中直接管理工作树并查看 Git 状态。
-
----
-
-## 🔔 tmux window 状态提醒
-
-集成 tmux window bell 机制。当 Agent 需要确认或任务完成时，tmux 状态栏会显示提醒标识，聚焦到对应面板后自动消除。
-
-<p align="center">
-  <img src="docs/screenshots/bell-notification.png" alt="tmux window bell notification" width="600" />
-</p>
 
 ---
 

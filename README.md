@@ -1,7 +1,5 @@
 <h1 align="center">tmux-agent-sidebar</h1>
 
-<p align="center">A tmux TUI that tracks every Claude Code, Codex, and OpenCode pane across every session and window. See status, background shells, prompts, Git state, activity, and worktrees in a floating window.</p>
-
 <p align="center">
   <img src="docs/screenshots/full-screen-preview.png" alt="tmux-agent-sidebar full-screen preview" width="800" />
 </p>

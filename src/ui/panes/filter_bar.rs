@@ -311,8 +311,14 @@ mod tests {
 
         // Selected item must be wrapped in brackets
         let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
-        assert!(text.contains("[●"), "selected must have [ before icon: {text}");
-        assert!(text.contains("1]"), "selected must have ] after count: {text}");
+        assert!(
+            text.contains("[●"),
+            "selected must have [ before icon: {text}"
+        );
+        assert!(
+            text.contains("1]"),
+            "selected must have ] after count: {text}"
+        );
 
         // Separators must be present
         assert!(text.contains("│"), "separators must be present: {text}");

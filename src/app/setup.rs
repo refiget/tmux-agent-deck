@@ -1,5 +1,5 @@
 use crate::session;
-use crate::state::AppState;
+use crate::state::{AppState, StatusFilter};
 use crate::ui;
 
 /// Construct and prime the initial [`AppState`] before the event loop starts.
@@ -16,6 +16,8 @@ pub(super) fn init_state(tmux_pane: String) -> AppState {
     state.bottom_panel_height = 0;
     state.pet_enabled = ui::pet_enabled_from_tmux();
     state.global.load_from_tmux();
+    state.global.status_filter = StatusFilter::All;
+    state.global.save_filter();
     state.refresh();
 
     super::render::refresh_git_for_focused_pane(&mut state);

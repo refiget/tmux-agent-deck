@@ -217,7 +217,7 @@ fn test_line_to_row_with_version_banner() {
 }
 
 #[test]
-fn test_secondary_header_click_on_i_opens_notices_popup_even_without_missing_hooks() {
+fn test_secondary_header_click_without_info_target_does_not_open_notices_popup() {
     let pane = make_pane(AgentType::Claude, PaneStatus::Idle);
     let mut state = make_state(vec![SessionInfo {
         session_name: "main".into(),
@@ -243,8 +243,8 @@ fn test_secondary_header_click_on_i_opens_notices_popup_even_without_missing_hoo
 
     state.handle_mouse_click(1, 0);
     assert!(
-        state.is_notices_popup_open(),
-        "i should stay clickable even when there are no missing hooks"
+        !state.is_notices_popup_open(),
+        "no info target is exposed in the simplified deck header"
     );
 }
 
@@ -381,7 +381,7 @@ fn test_state_new_defaults() {
     assert_eq!(state.scrolls.panes.offset, 0);
     assert_eq!(state.scrolls.panes.total_lines, 0);
     assert_eq!(state.scrolls.panes.visible_height, 0);
-    assert_eq!(state.bottom_tab, BottomTab::Activity);
+    assert_eq!(state.bottom_tab, BottomTab::GitStatus);
     assert!(state.git.branch.is_empty());
     assert_eq!(state.scrolls.git.offset, 0);
     assert!(state.git.pr_number.is_none());
@@ -445,7 +445,7 @@ fn test_scroll_bottom_dispatches_to_git() {
 }
 
 #[test]
-fn test_scroll_bottom_dispatches_to_activity() {
+fn test_scroll_bottom_forces_git_from_activity() {
     let mut state = make_state(vec![]);
     state.bottom_tab = BottomTab::Activity;
     state.activity.entries = vec![ActivityEntry {
@@ -456,21 +456,26 @@ fn test_scroll_bottom_dispatches_to_activity() {
     state.activity.scroll.total_lines = 10;
     state.activity.scroll.visible_height = 3;
     state.activity.scroll.offset = 0;
+    state.scrolls.git.total_lines = 10;
+    state.scrolls.git.visible_height = 3;
+    state.scrolls.git.offset = 0;
 
     state.scroll_bottom(2);
-    assert_eq!(state.activity.scroll.offset, 2);
+    assert_eq!(state.bottom_tab, BottomTab::GitStatus);
+    assert_eq!(state.activity.scroll.offset, 0);
+    assert_eq!(state.scrolls.git.offset, 2);
 }
 
 // ─── State: next_bottom_tab cycle Tests ─────────────────────────────
 
 #[test]
-fn test_next_bottom_tab_full_cycle() {
+fn test_next_bottom_tab_stays_on_git() {
     let mut state = make_state(vec![]);
-    assert_eq!(state.bottom_tab, BottomTab::Activity);
+    assert_eq!(state.bottom_tab, BottomTab::GitStatus);
     state.next_bottom_tab();
     assert_eq!(state.bottom_tab, BottomTab::GitStatus);
     state.next_bottom_tab();
-    assert_eq!(state.bottom_tab, BottomTab::Activity);
+    assert_eq!(state.bottom_tab, BottomTab::GitStatus);
 }
 
 // ─── State: scroll_activity empty Tests ─────────────────────────────
@@ -491,13 +496,13 @@ fn test_scroll_activity_empty_is_noop() {
 #[test]
 fn test_git_tab_active_after_tab_switch() {
     let mut state = make_state(vec![]);
-    assert_eq!(state.bottom_tab, BottomTab::Activity);
+    assert_eq!(state.bottom_tab, BottomTab::GitStatus);
 
     state.next_bottom_tab();
     assert_eq!(state.bottom_tab, BottomTab::GitStatus);
 
     state.next_bottom_tab();
-    assert_eq!(state.bottom_tab, BottomTab::Activity);
+    assert_eq!(state.bottom_tab, BottomTab::GitStatus);
 }
 
 // ─── State: global sync → rebuild consistency Tests ─────────────

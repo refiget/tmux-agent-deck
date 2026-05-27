@@ -31,6 +31,7 @@ pub fn run(
     needs_refresh: &'static AtomicBool,
 ) -> io::Result<()> {
     let mut state = setup::init_state(tmux_pane);
+    let popup_mode = std::env::var_os("TMUX_AGENT_SIDEBAR_POPUP").is_some();
     let mut window_inactive_count: u32 = 0;
 
     let workers = workers::spawn(&state);
@@ -66,7 +67,7 @@ pub fn run(
             loop {
                 let ev = event::read()?;
                 if let event::Event::Key(ref key) = ev
-                    && input::quit_requested(key)
+                    && input::quit_requested(key, popup_mode)
                 {
                     return Ok(());
                 }

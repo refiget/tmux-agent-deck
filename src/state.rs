@@ -952,17 +952,17 @@ mod tests {
     // ─── next_bottom_tab / scroll_bottom tests ──────────────────────
 
     #[test]
-    fn next_bottom_tab_toggles() {
+    fn next_bottom_tab_stays_on_git() {
         let mut state = AppState::new("%99".into());
-        assert_eq!(state.bottom_tab, BottomTab::Activity);
+        assert_eq!(state.bottom_tab, BottomTab::GitStatus);
         state.next_bottom_tab();
         assert_eq!(state.bottom_tab, BottomTab::GitStatus);
         state.next_bottom_tab();
-        assert_eq!(state.bottom_tab, BottomTab::Activity);
+        assert_eq!(state.bottom_tab, BottomTab::GitStatus);
     }
 
     #[test]
-    fn scroll_bottom_dispatches_to_activity() {
+    fn scroll_bottom_forces_git() {
         let mut state = AppState::new("%99".into());
         state.bottom_tab = BottomTab::Activity;
         state.activity.scroll = ScrollState {
@@ -970,10 +970,16 @@ mod tests {
             total_lines: 10,
             visible_height: 3,
         };
+        state.scrolls.git = ScrollState {
+            offset: 0,
+            total_lines: 10,
+            visible_height: 3,
+        };
 
         state.scroll_bottom(2);
-        assert_eq!(state.activity.scroll.offset, 2);
-        assert_eq!(state.scrolls.git.offset, 0);
+        assert_eq!(state.bottom_tab, BottomTab::GitStatus);
+        assert_eq!(state.activity.scroll.offset, 0);
+        assert_eq!(state.scrolls.git.offset, 2);
     }
 
     #[test]
@@ -994,7 +1000,7 @@ mod tests {
     // ─── handle_mouse_scroll tests ────────────────────────────────────
 
     #[test]
-    fn mouse_scroll_in_bottom_panel_scrolls_activity() {
+    fn mouse_scroll_in_bottom_panel_forces_git() {
         let mut state = AppState::new("%99".into());
         state.bottom_tab = BottomTab::Activity;
         state.activity.scroll = ScrollState {
@@ -1002,10 +1008,17 @@ mod tests {
             total_lines: 30,
             visible_height: 10,
         };
+        state.scrolls.git = ScrollState {
+            offset: 0,
+            total_lines: 30,
+            visible_height: 10,
+        };
         // term_height=50, bottom_panel=20 → bottom starts at row 30
         // mouse at row 35 → in bottom panel
         state.handle_mouse_scroll(35, 50, 20, 3);
-        assert_eq!(state.activity.scroll.offset, 3);
+        assert_eq!(state.bottom_tab, BottomTab::GitStatus);
+        assert_eq!(state.activity.scroll.offset, 0);
+        assert_eq!(state.scrolls.git.offset, 3);
         assert_eq!(state.scrolls.panes.offset, 0);
     }
 

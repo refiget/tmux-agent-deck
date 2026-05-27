@@ -39,7 +39,11 @@ pub(super) fn render_pane_lines_with_ports(
         None
     };
     let marker_ctx = RowCtx {
-        marker_char: if active || selected { SELECTION_MARKER } else { " " },
+        marker_char: if active || selected {
+            SELECTION_MARKER
+        } else {
+            " "
+        },
         marker_style: if active || selected {
             Style::default().fg(theme.accent)
         } else {
@@ -627,7 +631,10 @@ mod tests {
 
         assert!(lines.len() >= 2);
         let response_line = line_text(&lines[1]);
-        assert!(response_line.contains("←"), "response must use ← arrow: {response_line}");
+        assert!(
+            response_line.contains("←"),
+            "response must use ← arrow: {response_line}"
+        );
         assert!(!response_line.contains("▷"), "old ▷ must be gone");
         assert!(response_line.contains("Task completed successfully"));
     }
@@ -714,7 +721,10 @@ mod tests {
 
         assert!(lines.len() >= 2);
         let task_line = line_text(&lines[1]);
-        assert!(task_line.contains("✔◼") && task_line.contains("▒"), "expected filled+unfilled chars");
+        assert!(
+            task_line.contains("✔◼") && task_line.contains("▒"),
+            "expected filled+unfilled chars"
+        );
         assert!(task_line.contains("1/3"));
     }
 
@@ -1122,9 +1132,6 @@ mod tests {
         assert_eq!(lines.len(), 1, "prompt must be single line");
         let text = line_text(&lines[0]);
         // marker(1) + space(1) + indent(2) = "    "
-        assert!(
-            text.starts_with("    "),
-            "prompt must be indented: {text}"
-        );
+        assert!(text.starts_with("    "), "prompt must be indented: {text}");
     }
 }

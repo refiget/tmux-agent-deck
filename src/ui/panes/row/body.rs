@@ -143,7 +143,10 @@ pub(super) fn prompt_rows(pane: &crate::tmux::PaneInfo, ctx: &RowCtx) -> Vec<Lin
         let text_dw = prefix_dw + display_width(&truncated);
         return vec![ctx.row_line(
             vec![
-                Span::styled(prefix.to_string(), ctx.apply_bg(Style::default().fg(arrow_color))),
+                Span::styled(
+                    prefix.to_string(),
+                    ctx.apply_bg(Style::default().fg(arrow_color)),
+                ),
                 Span::styled(truncated, ctx.apply_bg(Style::default().fg(text_color))),
             ],
             text_dw,

@@ -1,7 +1,7 @@
 use std::io;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crossterm::event::{Event, KeyCode, KeyEvent, MouseButton, MouseEventKind};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use ratatui::{Terminal, backend::CrosstermBackend};
 
 use crate::state::{AppState, BottomTab, Focus};
@@ -113,14 +113,14 @@ pub(super) fn handle_event(
                     }
                 },
                 KeyCode::Char('h') | KeyCode::Left => {
-                        state.global.status_filter = state.global.status_filter.prev();
-                        state.global.save_filter();
-                        state.rebuild_row_targets();
+                    state.global.status_filter = state.global.status_filter.prev();
+                    state.global.save_filter();
+                    state.rebuild_row_targets();
                 }
                 KeyCode::Char('l') | KeyCode::Right => {
-                        state.global.status_filter = state.global.status_filter.next();
-                        state.global.save_filter();
-                        state.rebuild_row_targets();
+                    state.global.status_filter = state.global.status_filter.next();
+                    state.global.save_filter();
+                    state.rebuild_row_targets();
                 }
                 KeyCode::Char('r') => {
                     if state.focus_state.focus == Focus::Filter {
@@ -188,28 +188,42 @@ pub(super) fn handle_event(
     needs_redraw
 }
 
-pub(super) fn quit_requested(key: &KeyEvent) -> bool {
+pub(super) fn quit_requested(key: &KeyEvent, popup_mode: bool) -> bool {
     matches!(key.code, KeyCode::Char('q') | KeyCode::Esc)
+        || (popup_mode
+            && key.code == KeyCode::Char('a')
+            && key.modifiers.contains(KeyModifiers::ALT))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crossterm::event::{KeyEventKind, KeyEventState, KeyModifiers};
+    use crossterm::event::{KeyEventKind, KeyEventState};
 
-    fn key(code: KeyCode) -> KeyEvent {
+    fn key_with_modifiers(code: KeyCode, modifiers: KeyModifiers) -> KeyEvent {
         KeyEvent {
             code,
-            modifiers: KeyModifiers::NONE,
+            modifiers,
             kind: KeyEventKind::Press,
             state: KeyEventState::NONE,
         }
     }
 
+    fn key(code: KeyCode) -> KeyEvent {
+        key_with_modifiers(code, KeyModifiers::NONE)
+    }
+
     #[test]
     fn q_and_escape_quit() {
-        assert!(quit_requested(&key(KeyCode::Char('q'))));
-        assert!(quit_requested(&key(KeyCode::Esc)));
-        assert!(!quit_requested(&key(KeyCode::Char('j'))));
+        assert!(quit_requested(&key(KeyCode::Char('q')), false));
+        assert!(quit_requested(&key(KeyCode::Esc), false));
+        assert!(!quit_requested(&key(KeyCode::Char('j')), false));
+    }
+
+    #[test]
+    fn alt_a_quits_only_in_popup_mode() {
+        let alt_a = key_with_modifiers(KeyCode::Char('a'), KeyModifiers::ALT);
+        assert!(quit_requested(&alt_a, true));
+        assert!(!quit_requested(&alt_a, false));
     }
 }

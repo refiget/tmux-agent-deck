@@ -1046,6 +1046,33 @@ mod tests {
     }
 
     #[test]
+    fn parse_pane_fields_wipes_codex_shell_pane_when_only_stopped_process_remains() {
+        let _guard = test_mock::install();
+        let pane = "%CODEX_STOPPED";
+        test_mock::set(pane, PANE_AGENT, "codex");
+        test_mock::set(pane, PANE_PROMPT, "previous codex prompt");
+        test_mock::set(pane, PANE_STATUS, "idle");
+
+        let mut fields = full_fields();
+        fields[pane_line_field::PANE_ID] = pane;
+        fields[pane_line_field::AGENT] = "codex";
+        fields[pane_line_field::PANE_CURRENT_COMMAND] = "zsh";
+        fields[pane_line_field::PANE_PID] = "200";
+        let fields = field_strings(&fields);
+        let snapshot = process_snapshot(
+            "200 1 Ss zsh -zsh\n201 200 T codex codex\n202 201 S node node mcp-server\n",
+        );
+
+        assert!(parse_pane_fields_with_processes(&fields, Some(&snapshot)).is_none());
+        for key in &[PANE_AGENT, PANE_PROMPT, PANE_STATUS] {
+            assert!(
+                !test_mock::contains(pane, key),
+                "{key} must be cleared when only a stopped codex job remains"
+            );
+        }
+    }
+
+    #[test]
     fn parse_pane_line_wipes_stale_state_for_codex_shell_pane() {
         // Codex shares the same shell-fallback sweep path as OpenCode —
         // neither fires a reliable process-exit hook, so the Rust poller

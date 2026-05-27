@@ -6,6 +6,7 @@ use crate::tmux::AgentType;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ProcessInfo {
+    pub(crate) stat: String,
     pub(crate) comm: String,
     pub(crate) args: String,
 }
@@ -19,7 +20,7 @@ pub(crate) struct ProcessSnapshot {
 impl ProcessSnapshot {
     pub(crate) fn scan() -> Option<Self> {
         let output = Command::new("ps")
-            .args(["-eo", "pid=,ppid=,comm=,args="])
+            .args(["-eo", "pid=,ppid=,stat=,comm=,args="])
             .output()
             .ok()?;
         if !output.status.success() {
@@ -48,15 +49,24 @@ impl ProcessSnapshot {
             let Ok(ppid) = ppid_str.parse::<u32>() else {
                 continue;
             };
-            let Some(comm) = parts.next() else {
+            let Some(next) = parts.next() else {
                 continue;
+            };
+            let (stat, comm) = if is_process_stat(next) {
+                let Some(comm) = parts.next() else {
+                    continue;
+                };
+                (next.to_string(), comm.to_string())
+            } else {
+                (String::new(), next.to_string())
             };
 
             children_of.entry(ppid).or_default().push(pid);
             info_by_pid.insert(
                 pid,
                 ProcessInfo {
-                    comm: comm.to_string(),
+                    stat,
+                    comm,
                     args: parts.collect::<Vec<_>>().join(" "),
                 },
             );
@@ -93,7 +103,7 @@ impl ProcessSnapshot {
         self.descendants(seed_pids).into_iter().any(|pid| {
             self.info_by_pid
                 .get(&pid)
-                .map(|info| process_matches_agent(info, agent_name))
+                .map(|info| !process_is_stopped(info) && process_matches_agent(info, agent_name))
                 .unwrap_or(false)
         })
     }
@@ -111,6 +121,17 @@ impl ProcessSnapshot {
             })
             .collect()
     }
+}
+
+fn is_process_stat(token: &str) -> bool {
+    token
+        .chars()
+        .next()
+        .is_some_and(|c| matches!(c, 'D' | 'I' | 'R' | 'S' | 'T' | 'W' | 'X' | 'Z'))
+}
+
+fn process_is_stopped(info: &ProcessInfo) -> bool {
+    info.stat.starts_with('T')
 }
 
 pub(crate) fn command_basename(command: &str) -> &str {
@@ -172,9 +193,18 @@ mod tests {
     }
 
     #[test]
+    fn tree_has_agent_ignores_stopped_agent_processes() {
+        let snapshot =
+            ProcessSnapshot::from_ps_output("100 1 Ss zsh -zsh\n101 100 T codex codex\n");
+
+        assert!(!snapshot.tree_has_agent(&[100], &AgentType::Codex));
+    }
+
+    #[test]
     fn process_matches_agent_requires_command_name_match() {
         assert!(process_matches_agent(
             &ProcessInfo {
+                stat: "S".to_string(),
                 comm: "claude".to_string(),
                 args: "/opt/homebrew/bin/claude --flag".to_string(),
             },
@@ -182,6 +212,7 @@ mod tests {
         ));
         assert!(process_matches_agent(
             &ProcessInfo {
+                stat: "S".to_string(),
                 comm: "node".to_string(),
                 args: "/usr/local/bin/opencode".to_string(),
             },
@@ -189,6 +220,7 @@ mod tests {
         ));
         assert!(!process_matches_agent(
             &ProcessInfo {
+                stat: "S".to_string(),
                 comm: "not-opencode".to_string(),
                 args: "/usr/local/bin/not-opencode".to_string(),
             },

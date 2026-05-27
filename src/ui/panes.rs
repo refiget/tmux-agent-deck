@@ -427,20 +427,6 @@ pub(super) fn render_repo_popup(frame: &mut Frame, state: &mut AppState, area: R
     }
 }
 
-fn render_separator_into(frame: &mut Frame, state: &AppState, area: Rect) {
-    if area.height == 0 {
-        return;
-    }
-    let line = "─".repeat(area.width as usize);
-    frame.render_widget(
-        Paragraph::new(Line::from(Span::styled(
-            line,
-            Style::default().fg(state.theme.border_inactive),
-        ))),
-        area,
-    );
-}
-
 fn draw_inner_divider(
     buf: &mut ratatui::buffer::Buffer,
     outer: Rect,
@@ -540,11 +526,26 @@ fn render_flash_banner_into(frame: &mut Frame, state: &mut AppState, area: Rect)
 }
 
 pub fn draw_agents(frame: &mut Frame, state: &mut AppState, area: Rect) {
-    let layout = PaneLayout::compute(area);
+    // Outer panel box — color changes with focus state
+    let focused = state.focus_state.sidebar_focused
+        && state.focus_state.focus != Focus::ActivityLog;
+    let border_style = if focused {
+        Style::default().fg(state.theme.accent)
+    } else {
+        Style::default().fg(state.theme.border_inactive)
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(border_style);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let layout = PaneLayout::compute(inner);
     render_filter_bar_into(frame, state, layout.filter_area);
-    render_separator_into(frame, state, layout.sep1_area);
+    draw_inner_divider(frame.buffer_mut(), area, inner, layout.sep1_area.y, border_style);
     render_secondary_header_into(frame, state, layout.secondary_area);
-    render_separator_into(frame, state, layout.sep2_area);
+    draw_inner_divider(frame.buffer_mut(), area, inner, layout.sep2_area.y, border_style);
 
     let row_collector::CollectedRows {
         lines,
